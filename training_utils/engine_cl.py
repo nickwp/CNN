@@ -36,6 +36,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from io_utils.custom_samplers import SubsetSequenceSampler
 from torchviz import make_dot
+from torch import no_grad
 
 # WatChMaL imports
 from training_utils.engine import Engine
@@ -112,7 +113,7 @@ class EngineCL(Engine):
         mode -- One of 'train', 'validation' to set the correct grad_mode
         """
 
-        if self.data is not None and len(self.data.size()) == 4:
+        if self.data is not None and len(self.data.size()) == 3:
             self.data = self.data.to(self.device)
             #self.data = self.data.permute(0,3,1,2)
             
@@ -185,8 +186,7 @@ class EngineCL(Engine):
             for data in self.train_loader:
                 #print('in loop')    
 
-                # Using only the charge data
-                self.data     = data[0][:,:,:,:].float()
+                self.data     = data[0][:,:,:].float()
                 self.labels   = data[1].long()
                 self.energies = data[2]
                 self.angles = data[3]
@@ -237,7 +237,8 @@ class EngineCL(Engine):
 
                     local_values = []
 
-                    for val_batch in range(num_val_batches):
+                    with no_grad():
+                      for val_batch in range(num_val_batches):
 
                         try:
                             val_data = next(val_iter)
@@ -245,7 +246,7 @@ class EngineCL(Engine):
                             val_iter = iter(self.val_loader)
 
                         # Extract the event data from the input data tuple
-                        self.data     = val_data[0][:,:,:,:].float()
+                        self.data     = val_data[0][:,:,:].float()
                         self.labels   = val_data[1].long()
                         self.energies = val_data[2].float()
                         self.angles = val_data[3].float()
@@ -351,12 +352,13 @@ class EngineCL(Engine):
         avg_loss = 0
         avg_acc = 0
         count = 0
-        for iteration, data in enumerate(data_iter):
+        with no_grad():
+          for iteration, data in enumerate(data_iter):
             
             stdout.write("Iteration : " + str(iteration) + "\n")
 
             # Extract the event data from the input data tuple
-            self.data     = data[0][:,:,:,:].float()
+            self.data     = data[0][:,:,:].float()
             self.labels   = data[1].long()
             self.energies = data[2].float()
             self.eventids = data[5].float()

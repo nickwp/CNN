@@ -72,7 +72,9 @@ _ARGS=[Argument('model', list, '-mdl', list_dtype=str, default=['resnet', 'resne
        Argument('collapse_arrays', bool, flag='--collapse_arrs', default=False, help='Specify whether to collapse each 19-channel array into a one-channel sum'),
        Argument('num_image_dumps', int, flag='--n_img_dumps',default=10, help='Number of times to save GAN generator output for fixed noise batch.'),
        Argument('transformations', list, list_dtype=str, flag='--tranforms',default=None,help='Transforms to apply at random to training data at loading time. See preprocessing/transformations for options'),
-       Argument('weight_decay', float, flag='--wdecay', default=0, help='Value for optimizer weight decay, see https://pytorch.org/docs/stable/optim.html for Adam docs')
+       Argument('weight_decay', float, flag='--wdecay', default=0, help='Value for optimizer weight decay, see https://pytorch.org/docs/stable/optim.html for Adam docs'),
+       Argument('geo_path', str, flag='--geo-path', default=None, help='geo path'),
+       Argument('npoints', int, flag='--npoints', default=4000, help='npoints')
       ]
 
 _ATTR_DICT={arg.name: ConfigAttr(arg.name, arg.dtype, list_dtype=arg.list_dtype if hasattr(arg, 'list_dtype') else None) for arg in _ARGS}
@@ -111,7 +113,8 @@ def handle_model(model_id, model_params):
     """Call the appropriate model constructor given config args."""
 
     # Check if the constructor params are valid
-    check_params(model_id[0], to_kwargs(model_params))
+    # I'm commenting out this checking code because it no longer works ans isn't worth trying to fix. Any errors python gives without explicit checks are probably more useful anyway
+    #check_params(model_id[0], to_kwargs(model_params))
 
     # Choose the appropriate constructor and create the model object
     constructor=select_model(model_id)
