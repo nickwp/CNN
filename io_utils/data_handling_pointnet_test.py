@@ -143,16 +143,19 @@ class WCH5DatasetTest(Dataset):
             
             if index < (self.labels[self.datasets[i]].shape[0]):
                 start = self.event_hits_index[i][index]
-                stop = self.event_hits_index[i][index+1]
+                stop = min(start+self.npoints, self.event_hits_index[i][index+1])
                 nhits = stop - start
                 hit_pmts = self.hit_pmt[i][start:stop].astype(np.int16)
-                hit_charges = torch.from_numpy(self.charge[i][start:stop, None])
-                hit_times = torch.from_numpy(self.time[i][start:stop, None])
+                hit_charges = self.charge[i][start:stop]
+                hit_times = self.time[i][start:stop]
                 hit_positions = self.geo_positions[hit_pmts, :]
                 hit_orientations = self.geo_orientations[hit_pmts, :]
-                data = torch.nn.functional.pad(torch.cat((hit_positions, hit_charges, hit_times), -1).permute(1,0), (0, self.npoints-nhits))
+                data = np.zeros((5, self.npoints))
+                data[:3, :nhits] = hit_positions.T
+                data[3, :nhits] = hit_charges
+                data[4, :nhits] = hit_times
                 
-                return data, self.labels[self.datasets[i]][index], self.energies[self.datasets[i]][index], self.angles[self.datasets[i]][index], index, self.positions[self.datasets[i]][index]
+                return data, self.labels[self.datasets[i]][index], self.energies[self.datasets[i]][index], self.angles[self.datasets[i]][index], index, self.eventids[self.datasets[i]][index], self.rootfiles[self.datasets[i]][index]
                 
         assert False, "empty batch"
         raise RuntimeError("empty batch")

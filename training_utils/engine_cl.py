@@ -37,6 +37,8 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from io_utils.custom_samplers import SubsetSequenceSampler
 from torchviz import make_dot
 from torch import no_grad
+from torch.multiprocessing import set_sharing_strategy
+set_sharing_strategy('file_system')
 
 # WatChMaL imports
 from training_utils.engine import Engine
