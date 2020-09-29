@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.1
+#       jupytext_version: 1.5.2
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -41,15 +41,24 @@ def disp_learn_hist_smoothed(location, losslim=None, window_train=400,window_val
     val_log_csv  = pd.read_csv(val_log)
 
     epoch_train    = moving_average(np.array(train_log_csv.epoch),window_train)
-    accuracy_train = moving_average(np.array(train_log_csv.accuracy),window_train)
+    try:
+        accuracy_train = moving_average(np.array(train_log_csv.accuracy),window_train)
+    except:
+        accuracy_train = moving_average(np.array(train_log_csv.acc),window_train)        
     loss_train     = moving_average(np.array(train_log_csv.loss),window_train)
     
     epoch_val    = moving_average(np.array(val_log_csv.epoch),window_val)
-    accuracy_val = moving_average(np.array(val_log_csv.accuracy),window_val)
+    try:
+        accuracy_val = moving_average(np.array(val_log_csv.accuracy),window_val)
+    except:
+        accuracy_val = moving_average(np.array(val_log_csv.acc),window_val)
     loss_val     = moving_average(np.array(val_log_csv.loss),window_val)
 
     epoch_val_uns    = np.array(val_log_csv.epoch)
-    accuracy_val_uns = np.array(val_log_csv.accuracy)
+    try:
+        accuracy_val_uns = np.array(val_log_csv.accuracy)
+    except:
+        accuracy_val_uns = np.array(val_log_csv.acc)
     loss_val_uns     = np.array(val_log_csv.loss)
 
     fig, ax1 = plt.subplots(figsize=(12,8),facecolor='w')
@@ -134,7 +143,9 @@ def plot_confusion_matrix(labels, predictions, class_names,title=None):
     plt.show()
 
 # Plot multiple ROC curves on the same figure
-def plot_multiple_ROC(data, metric, pos_neg_labels, plot_labels = None, png_name=None,title='ROC Curve', annotate=True,ax=None, linestyle=None, leg_loc=None, xlabel=None,ylabel=None):
+def plot_multiple_ROC(data, metric, pos_neg_labels, plot_labels = None, png_name=None,title='ROC Curve',
+                      annotate=True,ax=None, linestyle=None, leg_loc=None, xlabel=None,ylabel=None,
+                      xlim=None, ylim=None, linecolor=None):
     '''
     Plot multiple ROC curves of background rejection vs signal efficiency.
     Args:
@@ -176,7 +187,7 @@ def plot_multiple_ROC(data, metric, pos_neg_labels, plot_labels = None, png_name
 
             inv_fpr = []
             for i in fpr:
-                inv_fpr.append(1/i) if i != 0 else inv_fpr.append(1/1e-5)
+                inv_fpr.append(1/i) if i != 0 else inv_fpr.append(3/(min(fpr[fpr>0])))
 
             tnr = 1. - fpr
         elif metric == 'fraction':
@@ -195,20 +206,28 @@ def plot_multiple_ROC(data, metric, pos_neg_labels, plot_labels = None, png_name
             if plot_labels is None:
                 line = ax.plot(tpr, inv_fpr,
                     label=r"${1:0.3f}$: $\{0}$, AUC ${1:0.3f}$".format((j),label_0, roc_auc) if label_0 is not "e" else r"${0}$, AUC ${1:0.3f}$".format(label_0, roc_auc),
-                    linestyle=linestyle[j]  if linestyle is not None else None, linewidth=2,markerfacecolor=model_colors[j])
+                    linestyle=linestyle[j]  if linestyle is not None else None,
+                    color=linecolor[j] if linecolor is not None else None,
+                    linewidth=2,markerfacecolor=model_colors[j])
             else:
                 line = ax.plot(tpr, inv_fpr,
                     label=r"${0}$: $\{1}$, AUC ${2:0.3f}$".format(plot_labels[j],label_0, roc_auc) if label_0 is not "e" else r"{0}, AUC ${1:0.3f}$".format(plot_labels[j], roc_auc),
-                    linestyle=linestyle[j]  if linestyle is not None else None, linewidth=2,markerfacecolor=model_colors[j])
+                    linestyle=linestyle[j]  if linestyle is not None else None,
+                    color=linecolor[j] if linecolor is not None else None,
+                    linewidth=2,markerfacecolor=model_colors[j])
         else:
             if plot_labels is None:
                 line = ax.plot(tpr, fraction,
                     label=r"${1:0.3f}$: $\{0}$, AUC ${1:0.3f}$".format((j),label_0, roc_auc) if label_0 is not "e" else r"${0}$, AUC ${1:0.3f}$".format(label_0, roc_auc),
-                    linestyle=linestyle[j]  if linestyle is not None else None, linewidth=2,markerfacecolor=model_colors[j])
+                    linestyle=linestyle[j]  if linestyle is not None else None,
+                    color=linecolor[j] if linecolor is not None else None,
+                    linewidth=2,markerfacecolor=model_colors[j])
             else:
                 line = ax.plot(tpr, fraction,
                     label=r"${0}$: $\{1}$, AUC ${2:0.3f}$".format(plot_labels[j],label_0, roc_auc) if label_0 is not "e" else r"{0}, AUC ${1:0.3f}$".format(plot_labels[j], roc_auc),
-                    linestyle=linestyle[j]  if linestyle is not None else None, linewidth=2,markerfacecolor=model_colors[j])
+                    linestyle=linestyle[j]  if linestyle is not None else None,
+                    color=linecolor[j] if linecolor is not None else None,
+                    linewidth=2,markerfacecolor=model_colors[j])
 
         # Show coords of individual points near x = 0.2, 0.5, 0.8
         todo = {0.2: True, 0.5: True, 0.8: True}
@@ -240,15 +259,16 @@ def plot_multiple_ROC(data, metric, pos_neg_labels, plot_labels = None, png_name
         if metric == 'rejection':
             ax.set_yscale('log')
 
+        if xlim is not None:
+            ax.set_xlim(xlim)
+        if ylim is not None:
+            ax.set_ylim(ylim)
         plt.margins(0.1)
         # plt.yscale("log")
         
     if png_name is not None: plt.savefig(os.path.join(os.getcwd(),png_name), bbox_inches='tight')    
     
-    plt.show()
-
-    plt.clf() # Clear the current figure
-    plt.close() # Close the opened window
+    # plt.show()
                 
     return fpr, tpr, threshold, roc_auc
 
@@ -321,7 +341,7 @@ def prep_roc_data(softmaxes, labels, metric, softmax_index_dict, label_0, label_
         return rejection_fraction, tprs, fprs, thresholds
 
 
-def disp_multiple_learn_hist(locations,losslim=None,show=True,titles=None,best_only=False,leg_font=10,title_font=10):
+def disp_multiple_learn_hist(locations,losslim=None,show=True,titles=None,best_only=False,leg_font=10,title_font=10,xmax=None):
     '''
     Plots a grid of learning histories.
     Args:
@@ -334,10 +354,10 @@ def disp_multiple_learn_hist(locations,losslim=None,show=True,titles=None,best_o
     author: Calum Macdonald
     June 2020
     '''
-    ncols = len(locations) if len(locations) < 3 else 3
-    nrows = math.ceil(len(locations)/3)
+    ncols = 1#len(locations) if len(locations) < 3 else 3
+    nrows = math.ceil(len(locations))#/3)
     if nrows==1 and ncols==1: fig = plt.figure(facecolor='w',figsize=(12,12))
-    else: fig = plt.figure(facecolor='w',figsize=(12,nrows*4))
+    else: fig = plt.figure(facecolor='w',figsize=(12,nrows*4*3))
     gs = gridspec.GridSpec(nrows,ncols,figure=fig)
     axes = []
     for i,location in enumerate(locations):
@@ -360,7 +380,9 @@ def disp_multiple_learn_hist(locations,losslim=None,show=True,titles=None,best_o
                 titles[i] = titles[i] + ", Best Val Loss ={loss:.4f}@Ep.{epoch:.2f}".format(loss=best_loss,epoch=best_epoch)
                 
         ax1=fig.add_subplot(gs[i],facecolor='w') if i ==0 else fig.add_subplot(gs[i],facecolor='w',sharey=axes[0])
-        ax1.set_xlim(0,train_log_csv.epoch.max())
+        if xmax is None:
+            xmax = train_log_csv.epoch.max()
+        ax1.set_xlim(0,xmax)
         axes.append(ax1)
         line11 = ax1.plot(train_log_csv.epoch, train_log_csv.loss, linewidth=2, label='Train loss', color='b', alpha=0.3)
         line12 = ax1.plot(val_log_csv.epoch, val_log_csv.loss, marker='o', markersize=3, linestyle='', label='Validation loss', color='blue')
@@ -369,8 +391,12 @@ def disp_multiple_learn_hist(locations,losslim=None,show=True,titles=None,best_o
         if titles is not None:
             ax1.set_title(titles[i],size=title_font)
         ax2 = ax1.twinx()
-        line21 = ax2.plot(train_log_csv.epoch, train_log_csv.accuracy, linewidth=2, label='Train accuracy', color='r', alpha=0.3)
-        line22 = ax2.plot(val_log_csv.epoch, val_log_csv.accuracy, marker='o', markersize=3, linestyle='', label='Validation accuracy', color='red')
+        try:
+            line21 = ax2.plot(train_log_csv.epoch, train_log_csv.accuracy, linewidth=2, label='Train accuracy', color='r', alpha=0.3)
+            line22 = ax2.plot(val_log_csv.epoch, val_log_csv.accuracy, marker='o', markersize=3, linestyle='', label='Validation accuracy', color='red')
+        except:
+            line21 = ax2.plot(train_log_csv.epoch, train_log_csv.acc, linewidth=2, label='Train accuracy', color='r', alpha=0.3)
+            line22 = ax2.plot(val_log_csv.epoch, val_log_csv.acc, marker='o', markersize=3, linestyle='', label='Validation accuracy', color='red')            
 
         ax1.set_xlabel('Epoch',fontweight='bold',fontsize=24,color='black')
         ax1.tick_params('x',colors='black',labelsize=18)
@@ -443,6 +469,30 @@ def plot_multiple_confusion_matrix(label_arrays, prediction_arrays, class_names,
                         color="white" if mat[i,j] > (0.5*mat.max()) else "black")
     gs.tight_layout(fig)
     return fig
+
+
+def load_test_output_pn(location, cut_path, test_idxs, cut_list):
+
+    test_dump_np = np.load(location, allow_pickle=True)
+    cut_file = np.load(cut_path, allow_pickle=True) 
+
+    cut_arrays = []
+    for cut in cut_list:
+        assert cut in cut_file.keys(), f"Error, {cut} has no associated cut file"
+        cut_arrays.append(cut_file[cut][test_idxs])
+
+    combined_cut_array=np.array(list(map(lambda x : 1 if 1 in x else 0,  list(zip(*cut_arrays)))))
+    cut_idxs = np.where(combined_cut_array==1)[0]
+
+    info_dict={}
+    arr_names=['predicted_labels', 'softmax', 'labels', 'energies', 'rootfiles', 'eventids', 'angles']
+    for arr_name in arr_names:
+        info_dict[arr_name] = np.concatenate(list([batch_array for batch_array in test_dump_np[arr_name]]))
+
+    for key in info_dict.keys():
+        info_dict[key] = np.delete(info_dict[key], cut_idxs, 0)
+
+    return info_dict
 
 
 def load_test_output(location,index_path,remove_flagged=True):
